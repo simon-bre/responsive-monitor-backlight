@@ -1,4 +1,3 @@
-E:
-cd E:\DEV\responsive-monitor-backlight
-call activate python-playground
+cd C:\DEV\responsive-monitor-backlight
+call activate ledcontrol
 python led_control.py
