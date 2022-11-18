@@ -9,6 +9,7 @@ import threading
 import sys
 import win32gui, win32process
 import wmi
+import pythoncom
 
 CLUSTERS = 6
 DOWNSCALE = 70
@@ -22,19 +23,40 @@ current_color = np.array([0.0, 0.0, 0.0])
 target_color = np.array([0.0, 0.0, 0.0])
 resume = True
 
-the_wmi = wmi.WMI()
 
-def get_app_name(hwnd):
-    """Get applicatin filename given hwnd."""
-    try:
-        _, pid = win32process.GetWindowThreadProcessId(hwnd)
-        for p in the_wmi.query('SELECT Name FROM Win32_Process WHERE ProcessId = %s' % str(pid)):
-            exe = p.Name
-            break
-    except:
-        return None
-    else:
-        return exe
+def get_app_color():
+    global target_color, resume
+    pythoncom.CoInitialize()
+    the_wmi = wmi.WMI()
+
+    while resume:
+        w = win32gui.GetForegroundWindow()
+        a = 'none'
+        try:
+            _, pid = win32process.GetWindowThreadProcessId(w)
+            for p in the_wmi.query('SELECT Name FROM Win32_Process WHERE ProcessId = %s' % str(pid)):
+                a = p.Name
+                break
+        except:
+            a = 'none'
+        a = a.lower()
+        if 'firefox' in a:
+            c = [255, 150, 0]
+        elif 'pycharm' in a:
+            c = [0, 255, 0]
+        elif 'zoom' in a:
+            c = [255, 0, 0]
+        elif 'zotero' in a or 'acrobat' in a:
+            c = [0, 0, 255]
+        elif 'tex' in a:
+            c = [255, 0, 255]
+            # todo: continue
+        else:
+            c = [100, 100, 100]
+        print(a)
+        target_color = np.array(c)
+        time.sleep(0.5)
+
 
 def get_screen_color():
     global target_color, resume
@@ -99,33 +121,12 @@ if __name__ == '__main__':
             resume = False
         elif sys.argv[1] == 'app':
             print('Hello, your LEDs are now controlled by the currently active app.')
+            grab_thread = threading.Thread(target=get_app_color)
+            grab_thread.start()
             send_thread = threading.Thread(target=send_to_arduino)
             send_thread.start()
-            while True:
-                w = win32gui.GetForegroundWindow()
-                a = get_app_name(w)
-                if a is not None:
-                    a = a.lower()
-                if 'firefox' in a:
-                    c = [255, 150, 0]
-                elif 'pycharm' in a:
-                    c = [0, 255, 0]
-                elif 'zoom' in a:
-                    c = [255, 0, 0]
-                elif 'zotero' in a or 'acrobat' in a:
-                    c = [0, 0, 255]
-                elif 'tex' in a :
-                    c = [255, 0, 255]
-                    # todo: continue
-                else:
-                    c = [100, 100, 100]
-                print(a)
-                target_color = np.array(c)
-                time.sleep(0.5)
-            # grab_thread = threading.Thread(target=get_app_color)
-            # grab_thread.start()
-            # input('Press enter to quit.')
-            # resume = False
+            input('Press enter to quit.')
+            resume = False
         exit(0)
     else:
         send_thread = threading.Thread(target=send_to_arduino)
