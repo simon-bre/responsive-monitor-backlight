@@ -23,6 +23,35 @@ current_color = np.array([0.0, 0.0, 0.0])
 target_color = np.array([0.0, 0.0, 0.0])
 resume = True
 
+app_col = {
+    'pycharm': (0, 255, 0),
+    'code': (0, 255, 0),
+    'terminal': (0, 255, 0),
+    'cmd': (0, 255, 0),
+    'oxygen': (0, 255, 0),
+
+    'zotero': (0, 0, 255),
+    'acrobat': (0, 0, 255),
+
+    'tex': (0, 255, 255),
+    'word': (0, 255, 255),
+    'notepad': (0, 255, 255),
+    'excel': (0, 255, 255),
+
+    'thunderbird': (255, 0, 255),
+    'teams': (255, 0, 255),
+    'signal': (255, 0, 255),
+    'whatsapp': (255, 0, 255),
+
+    'illustrator': (255, 255, 0),
+    'photoshop': (255, 255, 0),
+    'wrap': (255, 255, 0),
+    'powerpoint': (255, 255, 0)
+}
+win_col = {
+    'meeting': (255, 0, 0),
+    'besprechung': (255, 0, 0)
+}
 
 def get_app_color():
     global target_color, resume
@@ -30,30 +59,34 @@ def get_app_color():
     the_wmi = wmi.WMI()
 
     while resume:
-        w = win32gui.GetForegroundWindow()
+        w_handle = win32gui.GetForegroundWindow()
         a = 'none'
         try:
-            _, pid = win32process.GetWindowThreadProcessId(w)
+            _, pid = win32process.GetWindowThreadProcessId(w_handle)
             for p in the_wmi.query('SELECT Name FROM Win32_Process WHERE ProcessId = %s' % str(pid)):
                 a = p.Name
                 break
         except:
             a = 'none'
         a = a.lower()
-        if 'firefox' in a:
-            c = [255, 150, 0]
-        elif 'pycharm' in a:
-            c = [0, 255, 0]
-        elif 'zoom' in a:
-            c = [255, 0, 0]
-        elif 'zotero' in a or 'acrobat' in a:
-            c = [0, 0, 255]
-        elif 'tex' in a:
-            c = [255, 0, 255]
-            # todo: continue
-        else:
-            c = [100, 100, 100]
-        print(a)
+        try:
+            w = win32gui.GetWindowText(w_handle).lower()
+        except:
+            w = 'none'
+
+        print(f'{a} | {w}')
+
+        c = (100, 100, 100)
+
+        for k, v in app_col.items():
+            if k in a:
+                c = v
+                break
+        for k, v in win_col.items():
+            if k in w:
+                c = v
+                break
+
         target_color = np.array(c)
         time.sleep(0.5)
 
